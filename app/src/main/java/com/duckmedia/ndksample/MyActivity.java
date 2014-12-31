@@ -1,6 +1,7 @@
 package com.duckmedia.ndksample;
 
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,10 +27,11 @@ public class MyActivity extends Activity {//implements CameraBridgeViewBase.CvCa
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my);
-
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         // Create an instance of Camera
         mCamera = getCameraInstance();
 
+        mCamera.setDisplayOrientation(90);
         // Create our Preview view and set it as the content of our activity.
         mPreview = new CameraPreview(this, mCamera);
         FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
@@ -40,12 +42,33 @@ public class MyActivity extends Activity {//implements CameraBridgeViewBase.CvCa
     public static Camera getCameraInstance(){
         Camera c = null;
         try {
-            c = Camera.open(); // attempt to get a Camera instance
+            int camID = MyActivity.getFrontCameraId();
+            if(camID != -1)
+                c = Camera.open(camID); // attempt to get a Camera instance
+            else
+                throw new Exception("No front camera found");
+
         }
         catch (Exception e){
             // Camera is not available (in use or does not exist)
         }
         return c; // returns null if camera is unavailable
+    }
+
+
+    private static int getFrontCameraId(){
+        int camId = -1;
+        int numberOfCameras = Camera.getNumberOfCameras();
+        Camera.CameraInfo ci = new Camera.CameraInfo();
+
+        for(int i = 0;i < numberOfCameras;i++){
+            Camera.getCameraInfo(i,ci);
+            if(ci.facing == Camera.CameraInfo.CAMERA_FACING_FRONT){
+                camId = i;
+            }
+        }
+
+        return camId;
     }
 
 
