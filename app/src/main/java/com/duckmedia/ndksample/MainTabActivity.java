@@ -2,6 +2,7 @@ package com.duckmedia.ndksample;
 
 import java.util.Locale;
 
+import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -19,7 +20,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 
-public class MainTabActivity extends ActionBarActivity implements ActionBar.TabListener {
+public class MainTabActivity extends ActionBarActivity implements ActionBar.TabListener, NotesListF.OnFragmentInteractionListener {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -72,6 +73,7 @@ public class MainTabActivity extends ActionBarActivity implements ActionBar.TabL
             actionBar.addTab(
                     actionBar.newTab()
                             .setText(mSectionsPagerAdapter.getPageTitle(i))
+
                             .setTabListener(this));
         }
     }
@@ -114,6 +116,12 @@ public class MainTabActivity extends ActionBarActivity implements ActionBar.TabL
     public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
     }
 
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
+        System.out.println(uri.getAuthority());
+    }
+
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
@@ -128,6 +136,10 @@ public class MainTabActivity extends ActionBarActivity implements ActionBar.TabL
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
+            switch (position) {
+                case 0:
+                    return NotesListF.newInstance("Hola", "Mauricio!!") ;
+            }
             return PlaceholderFragment.newInstance(position + 1);
         }
 

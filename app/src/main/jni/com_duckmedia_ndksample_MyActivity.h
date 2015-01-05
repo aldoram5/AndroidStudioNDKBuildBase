@@ -12,8 +12,10 @@ extern "C" {
  * Method:    hello
  * Signature: ()Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_com_duckmedia_ndksample_MyActivity_hello
-  (JNIEnv *, jobject);
+JNIEXPORT jstring JNICALL Java_com_duckmedia_ndksample_MyActivity_hello (JNIEnv *, jobject);
+    
+    
+JNIEXPORT jlong JNICALL Java_org_opencv_contrib_Contrib_n_1createLBPHFaceRecognizer (JNIEnv *, jclass);
 
 #ifdef __cplusplus
 }
