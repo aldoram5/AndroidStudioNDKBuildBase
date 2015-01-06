@@ -2,11 +2,12 @@ package com.duckmedia.ndksample;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
-import android.net.Uri;
+import android.hardware.Camera.ShutterCallback;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -16,22 +17,21 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 
 public class MyActivity extends Activity implements View.OnClickListener {//implements CameraBridgeViewBase.CvCameraViewListener2{
 
 
     private Camera mCamera;
-    private CameraPreview mPreview;
+
+    // The surface view for the camera data
+    private CameraPreview mView;
 
     private boolean theresCam = false;
     private Context context = null;
-    private PictureCallback mPicture = new PictureCallback();
+    //private PictureCallback mPicture = new PictureCallback();
 
     // Draw rectangles and other fancy stuff:
     private FaceOverlayView mFaceView;
@@ -64,7 +64,7 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
         theresCam = checkCameraHardware(context);
 
         mCamera = null;
-        mPreview = null;
+        mView = null;
 
         /* Create an instance of Camera
         mCamera = getCameraInstance();
@@ -73,9 +73,9 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
         if(null != mCamera){
             mCamera.setDisplayOrientation(90);
             // Create our Preview view and set it as the content of our activity.
-            mPreview = new CameraPreview(this, mCamera);
+            mView = new CameraPreview(this, mCamera);
             FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-            preview.addView(mPreview);
+            preview.addView(mView);
         }*/
     }
 
@@ -92,14 +92,16 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
 
             if(mCamera != null) {
                 mCamera.setDisplayOrientation(90);
-                // Create our Preview view and set it as the content of our activity.
-                mPreview = new CameraPreview(this, mCamera, faceDetectionListener, mFaceView);
 
-                FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-                preview.addView(mPreview);
-
-                // Now create the OverlayView:
+                // Create the OverlayView:
                 mFaceView = new FaceOverlayView(this);
+
+                // Create our Preview view and set it as the content of our activity.
+                mView = new CameraPreview(this, mCamera, faceDetectionListener, mFaceView);
+                FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+                preview.addView(mView);
+
+                // Add this view
                 addContentView(mFaceView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
             } else Log.d(TAG, "fail to get a device's camera");
@@ -142,7 +144,7 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
     private void releaseCameraAndPreview() {
         Log.d(TAG, "Release Camera & preview");
 
-        if(mPreview != null) mPreview.setCamera(null);
+        if(mView != null) mView.setCamera(null);
 
         Log.d(TAG, "Release Camera");
         if (mCamera != null) {
@@ -192,10 +194,11 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.button_capture:
-                System.out.println("Button pressed");
+               /* System.out.println("Button pressed");
                 this.releaseCamera();
                 Intent intent = new Intent(this,MainTabActivity.class);
-                startActivity(intent);
+                startActivity(intent);*/
+                mCamera.takePicture(myShutterCallback,null, myPictureCallback_JPG);
                 break;
         }
     }
@@ -217,9 +220,58 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
             return false;
         }
     }
+
+    ShutterCallback myShutterCallback = new ShutterCallback(){
+
+        @Override
+        public void onShutter() {
+            // TODO Auto-generated method stub
+
+        }};
+
+    Camera.PictureCallback myPictureCallback_JPG = new Camera.PictureCallback(){
+
+        @Override
+        public void onPictureTaken(byte[] arg0, Camera arg1) {
+            Log.d(TAG, "Saving Image");
+            // TODO Auto-generated method stub
+            Bitmap bitmapPicture = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
+
+            Log.d(TAG, "bitmapPicture " + bitmapPicture.toString());
+
+            String filename = "pippo.jpg";
+            File sd = Environment.getExternalStorageDirectory();
+            File dest = new File(sd, filename);
+
+
+            FileOutputStream out = null;
+            try {
+                out = new FileOutputStream(dest);
+                bitmapPicture.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+                // PNG is a lossless format, the compression factor (100) is ignored
+
+                Log.d(TAG, "Image saved");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (out != null) {
+                        out.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+        }};
+
 }
 
-//
+
+
+/*
 class PictureCallback implements Camera.PictureCallback {
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
@@ -247,12 +299,16 @@ class PictureCallback implements Camera.PictureCallback {
         }
     }
 
-    /** Create a file Uri for saving an image or video */
+    */
+/** Create a file Uri for saving an image or video *//*
+
     private static Uri getOutputMediaFileUri(int type){
         return Uri.fromFile(getOutputMediaFile(type));
     }
 
-    /** Create a File for saving an image or video */
+    */
+/** Create a File for saving an image or video *//*
+
     private static File getOutputMediaFile(int type){
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
@@ -285,4 +341,4 @@ class PictureCallback implements Camera.PictureCallback {
 
         return mediaFile;
     }
-}
+}*/
