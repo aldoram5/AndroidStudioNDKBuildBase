@@ -36,10 +36,14 @@
             android:name=".MainTabActivity"
             android:label="@string/title_activity_main_tab"
             android:parentActivityName=".MyActivity"
-            android:theme="@style/Base.Theme.AppCompat">
+            android:theme="@style/Base.Theme.AppCompat" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.duckmedia.ndksample.MyActivity" />
+        </activity>
+        <activity
+            android:name=".NotesList"
+            android:label="@string/title_activity_notes_list" >
         </activity>
     </application>
 
