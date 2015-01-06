@@ -1,2 +1,2 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merger version="3"><dataSet config="main"><source path="/Users/gbmobile2/AndroidStudioProjects/NDKSample/libraries/opencv/src/main/assets"/></dataSet><dataSet config="debug"><source path="/Users/gbmobile2/AndroidStudioProjects/NDKSample/libraries/opencv/src/debug/assets"/></dataSet></merger>
+<merger version="3"><dataSet config="main"><source path="/Users/gbmobile/Documents/AndroidStudioNDKBuildBase/libraries/opencv/src/main/assets"/></dataSet><dataSet config="debug"><source path="/Users/gbmobile/Documents/AndroidStudioNDKBuildBase/libraries/opencv/src/debug/assets"/></dataSet></merger>

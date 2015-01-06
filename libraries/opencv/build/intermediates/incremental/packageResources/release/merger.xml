@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merger version="3"><dataSet config="main"><source path="/Users/gbmobile2/AndroidStudioProjects/NDKSample/libraries/opencv/res"><file path="/Users/gbmobile2/AndroidStudioProjects/NDKSample/libraries/opencv/res/values/attrs.xml" qualifiers=""><declare-styleable name="CameraBridgeViewBase">
+<merger version="3"><dataSet config="main"><source path="/Users/gbmobile/Documents/AndroidStudioNDKBuildBase/libraries/opencv/res"><file path="/Users/gbmobile/Documents/AndroidStudioNDKBuildBase/libraries/opencv/res/values/attrs.xml" qualifiers=""><declare-styleable name="CameraBridgeViewBase">
        <attr format="boolean" name="show_fps"/>
        <attr format="integer" name="camera_id">
           <enum name="any" value="-1"/>
           <enum name="back" value="99"/>
           <enum name="front" value="98"/>
        </attr>
-    </declare-styleable></file></source><source path="/Users/gbmobile2/AndroidStudioProjects/NDKSample/libraries/opencv/build/generated/res/rs/release"/><source path="/Users/gbmobile2/AndroidStudioProjects/NDKSample/libraries/opencv/build/generated/res/generated/release"/></dataSet><dataSet config="release"><source path="/Users/gbmobile2/AndroidStudioProjects/NDKSample/libraries/opencv/src/release/res"/></dataSet><mergedItems><configuration qualifiers=""><declare-styleable name="CameraBridgeViewBase"><attr format="boolean" name="show_fps"/><attr format="integer" name="camera_id"><enum name="any" value="-1"/><enum name="back" value="99"/><enum name="front" value="98"/></attr></declare-styleable></configuration></mergedItems></merger>
+    </declare-styleable></file></source><source path="/Users/gbmobile/Documents/AndroidStudioNDKBuildBase/libraries/opencv/build/generated/res/rs/release"/><source path="/Users/gbmobile/Documents/AndroidStudioNDKBuildBase/libraries/opencv/build/generated/res/generated/release"/></dataSet><dataSet config="release"><source path="/Users/gbmobile/Documents/AndroidStudioNDKBuildBase/libraries/opencv/src/release/res"/></dataSet><mergedItems><configuration qualifiers=""><declare-styleable name="CameraBridgeViewBase"><attr format="boolean" name="show_fps"/><attr format="integer" name="camera_id"><enum name="any" value="-1"/><enum name="back" value="99"/><enum name="front" value="98"/></attr></declare-styleable></configuration></mergedItems></merger>
