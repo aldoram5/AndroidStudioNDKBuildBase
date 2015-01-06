@@ -13,7 +13,18 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private SurfaceHolder mHolder;
     private Camera mCamera;
 
-    public CameraPreview(Context context, Camera camera) {
+    // Draw rectangles and other fancy stuff:
+    private FaceOverlayView mFaceView;
+
+
+    /**
+     * Sets the faces for the overlay view, so it can be updated
+     * and the face overlays will be drawn again.
+     */
+    private Camera.FaceDetectionListener faceDetectionListener;
+
+
+    public CameraPreview(Context context, Camera camera, Camera.FaceDetectionListener fdl, FaceOverlayView fov ) {
         super(context);
         mCamera = camera;
 
@@ -23,10 +34,15 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         mHolder.addCallback(this);
         // deprecated setting, but required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+        this.mFaceView = fov;
+        this.faceDetectionListener = fdl;
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, now tell the camera where to draw the preview.
+        mCamera.setFaceDetectionListener(faceDetectionListener);
+        mCamera.startFaceDetection();
         try {
             mCamera.setPreviewDisplay(holder);
             mCamera.startPreview();
@@ -68,7 +84,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
     }
 
-    public void setCamera(Camera camera){
-        this.mCamera = camera;
-    }
+    public void setCamera(Camera camera){this.mCamera = camera;}
+    public void setFaceDetectionListener(Camera.FaceDetectionListener fdl){this.faceDetectionListener = fdl; }
+    public void setFaceOverlayView(FaceOverlayView fov){ this.mFaceView = fov;}
 }

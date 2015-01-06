@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
@@ -32,7 +33,23 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
     private Context context = null;
     private PictureCallback mPicture = new PictureCallback();
 
+    // Draw rectangles and other fancy stuff:
+    private FaceOverlayView mFaceView;
+
     public static final String TAG = MyActivity.class.getSimpleName();
+
+    /**
+     * Sets the faces for the overlay view, so it can be updated
+     * and the face overlays will be drawn again.
+     */
+    private Camera.FaceDetectionListener faceDetectionListener = new Camera.FaceDetectionListener() {
+        @Override
+        public void onFaceDetection(Camera.Face[] faces, Camera camera) {
+            Log.d("onFaceDetection", "Number of Faces:" + faces.length);
+            // Update the view now!
+            mFaceView.setFaces(faces);
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -76,9 +93,14 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
             if(mCamera != null) {
                 mCamera.setDisplayOrientation(90);
                 // Create our Preview view and set it as the content of our activity.
-                mPreview = new CameraPreview(this, mCamera);
+                mPreview = new CameraPreview(this, mCamera, faceDetectionListener, mFaceView);
+
                 FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
                 preview.addView(mPreview);
+
+                // Now create the OverlayView:
+                mFaceView = new FaceOverlayView(this);
+                addContentView(mFaceView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
             } else Log.d(TAG, "fail to get a device's camera");
 
