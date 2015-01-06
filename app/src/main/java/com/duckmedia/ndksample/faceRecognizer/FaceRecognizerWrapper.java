@@ -12,8 +12,10 @@ import java.util.List;
 /**
  * Created by gbmobile2 on 1/5/15.
  */
+
+
 public class FaceRecognizerWrapper extends FaceRecognizer {
-    private static FaceRecognizerWrapper instance;
+    private static FaceRecognizerWrapper instance = null;
     private FaceRecognizer recognizer;
     private int minConfidenceLevel;
 
@@ -24,6 +26,9 @@ public class FaceRecognizerWrapper extends FaceRecognizer {
     }
 
     public static FaceRecognizerWrapper getInstance() {
+        if (instance == null) {
+            instance = new FaceRecognizerWrapper();
+        }
         return instance;
     }
 
@@ -32,8 +37,14 @@ public class FaceRecognizerWrapper extends FaceRecognizer {
 
     }
 
-    public void predict(){
-        //TODO pending method body
+    public boolean predict(Bitmap toCheck){
+        Mat mat = new Mat();
+        Utils.bitmapToMat(toCheck, mat);
+        int [] label = new int[1];
+        double [] confidence = new double[1];
+        super.predict(mat,label,confidence);
+        return label[0] == 1;
+
     }
 
     public void load(){
@@ -54,6 +65,20 @@ public class FaceRecognizerWrapper extends FaceRecognizer {
         Mat label = new Mat();
         label.put(0,0,1);
         super.train(mats,label);
+    }
+
+    public void update(Bitmap [] photos){
+
+        List<Mat> mats = new ArrayList<>();
+
+        for (int i = 0; i < photos.length; i++) {
+            Mat mat = new Mat();
+            Utils.bitmapToMat(photos[i],mat);
+            mats.add(mat);
+        }
+        Mat label = new Mat();
+        label.put(0,0,1);
+        super.update(mats, label);
     }
 
     //JNI Required Wrapper
