@@ -61,7 +61,7 @@ public class FaceOverlayView extends View {
         super.onDraw(canvas);
         if (mFaces != null && mFaces.length > 0) {
             Matrix matrix = new Matrix();
-            Util.prepareMatrix(matrix, false, mDisplayOrientation, getWidth(), getHeight());
+            Util.prepareMatrix(matrix, true, mDisplayOrientation, getWidth(), getHeight());
             canvas.save();
             matrix.postRotate(mOrientation);
             canvas.rotate(-mOrientation);

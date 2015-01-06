@@ -28,16 +28,39 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         super(context);
         mCamera = camera;
 
+
+        init();
         // Install a SurfaceHolder.Callback so we get notified when the
         // underlying surface is created and destroyed.
+
+        this.mFaceView = fov;
+        this.faceDetectionListener = new Camera.FaceDetectionListener() {
+            @Override
+            public void onFaceDetection(Camera.Face[] faces, Camera camera) {
+                Log.d("onFaceDetection", "Number of Faces:" + faces.length);
+                // Update the view now!
+                mFaceView.setFaces(faces);
+            }
+        };
+    }
+
+    public CameraPreview(Context context, Camera mCamera, FaceOverlayView mFaceView) {
+        super(context);
+        this.mCamera = mCamera;
+        this.mFaceView = mFaceView;
+        init();
+    }
+
+
+    private void init(){
         mHolder = getHolder();
         mHolder.addCallback(this);
         // deprecated setting, but required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-        this.mFaceView = fov;
-        this.faceDetectionListener = fdl;
+
     }
+
 
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, now tell the camera where to draw the preview.
@@ -52,6 +75,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
+        this.getHolder().removeCallback(this);
         mCamera.setPreviewCallback(null);
         mCamera.setFaceDetectionListener(null);
         mCamera.setErrorCallback(null);

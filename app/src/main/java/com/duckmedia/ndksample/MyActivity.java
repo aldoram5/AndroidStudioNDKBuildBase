@@ -2,41 +2,52 @@ package com.duckmedia.ndksample;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
+import android.hardware.Camera.Face;
+import android.hardware.Camera.FaceDetectionListener;
+import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.OrientationEventListener;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
-import android.widget.FrameLayout;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
+public class MyActivity extends Activity  implements SurfaceHolder.Callback {
 
-public class MyActivity extends Activity implements View.OnClickListener {//implements CameraBridgeViewBase.CvCameraViewListener2{
-
+    public static final String TAG = MyActivity.class.getSimpleName();
 
     private Camera mCamera;
 
-    // The surface view for the camera data
-    private CameraPreview mView;
+    // We need the phone orientation to correctly draw the overlay:
+    private int mOrientation;
+    private int mOrientationCompensation;
+    private OrientationEventListener mOrientationEventListener;
 
-    private boolean theresCam = false;
-    private Context context = null;
-    //private PictureCallback mPicture = new PictureCallback();
+    // Let's keep track of the display rotation and orientation also:
+    private int mDisplayRotation;
+    private int mDisplayOrientation;
+
+    // Holds the Face Detection result:
+    private Camera.Face[] mFaces;
+
+    // The surface view for the camera data
+    private SurfaceView mView;
 
     // Draw rectangles and other fancy stuff:
     private FaceOverlayView mFaceView;
-
-    public static final String TAG = MyActivity.class.getSimpleName();
 
     /**
      * Sets the faces for the overlay view, so it can be updated
@@ -54,291 +65,116 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_my);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        mView = new SurfaceView(this);
 
-        Log.d(TAG, "Setting the context");
-        context = this;
-
-        Log.d(TAG, "looking for cameras in the device");
-        theresCam = checkCameraHardware(context);
-
-        mCamera = null;
-        mView = null;
-
-        /* Create an instance of Camera
-        mCamera = getCameraInstance();
-
-        this.initUIListeners();
-        if(null != mCamera){
-            mCamera.setDisplayOrientation(90);
-            // Create our Preview view and set it as the content of our activity.
-            mView = new CameraPreview(this, mCamera);
-            FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-            preview.addView(mView);
-        }*/
+        setContentView(mView);
+        // Now create the OverlayView:
+        mFaceView = new FaceOverlayView(this);
+        addContentView(mFaceView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        // Create and Start the OrientationListener:
+        mOrientationEventListener = new SimpleOrientationEventListener(this);
+        mOrientationEventListener.enable();
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-
-        if(theresCam) {
-            this.initUIListeners();
-            Log.d(TAG, "Camera found");
-
-            // Create an instance of Camera
-            mCamera = getCameraInstance();
-
-            if(mCamera != null) {
-                mCamera.setDisplayOrientation(90);
-
-                // Create the OverlayView:
-                mFaceView = new FaceOverlayView(this);
-
-                // Create our Preview view and set it as the content of our activity.
-                mView = new CameraPreview(this, mCamera, faceDetectionListener, mFaceView);
-                FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-                preview.addView(mView);
-
-                // Add this view
-                addContentView(mFaceView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
-            } else Log.d(TAG, "fail to get a device's camera");
-
-        }
-        else Log.d(TAG, "there aren't cameras attached to the device");
-    }
-
-    private void initUIListeners(){
-
-        Button bc = (Button) findViewById(R.id.button_capture);
-        bc.setOnClickListener(this);
-
-    }
-
-
-    /** A safe way to get an instance of the Camera object. */
-    public Camera getCameraInstance(){
-        releaseCameraAndPreview();
-
-        Camera c = null;
-
-        try {
-            Log.d(TAG, "Attempt to get a Camera instance");
-            int camID = MyActivity.getFrontCameraId();
-            if(camID != -1)
-                c = Camera.open(camID); // attempt to get a Camera instance
-            else
-                throw new Exception("No front camera found");
-            Log.d("mainActivity", "We got a Camera instance");
-        }
-        catch (Exception e){
-            // Camera is not available (in use or does not exist)
-            Log.d(TAG, "Camera is not available (in use or does not exist)");
-            e.printStackTrace();
-        }
-        return c; // returns null if mCamera is unavailable
-    }
-
-    private void releaseCameraAndPreview() {
-        Log.d(TAG, "Release Camera & preview");
-
-        if(mView != null) mView.setCamera(null);
-
-        Log.d(TAG, "Release Camera");
-        if (mCamera != null) {
-            mCamera.release();
-            mCamera = null;
-        }
-    }
-
-    private static int getFrontCameraId(){
-        int camId = -1;
-        int numberOfCameras = Camera.getNumberOfCameras();
-        Camera.CameraInfo ci = new Camera.CameraInfo();
-
-        for(int i = 0;i < numberOfCameras;i++){
-            Camera.getCameraInfo(i,ci);
-            if(ci.facing == Camera.CameraInfo.CAMERA_FACING_FRONT){
-                camId = i;
-            }
-        }
-
-        return camId;
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        SurfaceHolder holder = mView.getHolder();
+        holder.addCallback(this);
     }
 
     @Override
     protected void onPause() {
+        mOrientationEventListener.disable();
         super.onPause();
-        //releaseMediaRecorder();       // if you are using MediaRecorder, release it first
-        releaseCamera();              // release the camera immediately on pause event
     }
-/*
-    private void releaseMediaRecorder(){
-        if (mMediaRecorder != null) {
-            mMediaRecorder.reset();   // clear recorder configuration
-            mMediaRecorder.release(); // release the recorder object
-            mMediaRecorder = null;
-            mCamera.lock();           // lock camera for later use
-        }
-    }
-*/
-    private void releaseCamera(){
-        if (mCamera != null){
-            mCamera.release();        // release the camera for other applications
-            mCamera = null;
-        }
-    }
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()){
-            case R.id.button_capture:
-               /* System.out.println("Button pressed");
-                this.releaseCamera();
-                Intent intent = new Intent(this,MainTabActivity.class);
-                startActivity(intent);*/
-                mCamera.takePicture(myShutterCallback,null, myPictureCallback_JPG);
-                break;
-        }
-    }
-
-
-
-
-
-    //Custom Methods
-
-    /** Check if this device has a mCamera */
-    private boolean checkCameraHardware(Context context) {
-
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
-            // this device has a mCamera
-            return true;
-        } else {
-            // no mCamera on this device
-            return false;
-        }
-    }
-
-    ShutterCallback myShutterCallback = new ShutterCallback(){
-
-        @Override
-        public void onShutter() {
-            // TODO Auto-generated method stub
-
-        }};
-
-    Camera.PictureCallback myPictureCallback_JPG = new Camera.PictureCallback(){
-
-        @Override
-        public void onPictureTaken(byte[] arg0, Camera arg1) {
-            Log.d(TAG, "Saving Image");
-            // TODO Auto-generated method stub
-            Bitmap bitmapPicture = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
-
-            Log.d(TAG, "bitmapPicture " + bitmapPicture.toString());
-
-            String filename = "pippo.jpg";
-            File sd = Environment.getExternalStorageDirectory();
-            File dest = new File(sd, filename);
-
-
-            FileOutputStream out = null;
-            try {
-                out = new FileOutputStream(dest);
-                bitmapPicture.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
-                // PNG is a lossless format, the compression factor (100) is ignored
-
-                Log.d(TAG, "Image saved");
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    if (out != null) {
-                        out.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-
-        }};
-
-}
-
-
-
-/*
-class PictureCallback implements Camera.PictureCallback {
-    public static final int MEDIA_TYPE_IMAGE = 1;
-    public static final int MEDIA_TYPE_VIDEO = 2;
 
     @Override
-    public void onPictureTaken(byte[] data, Camera camera) {
+    protected void onResume() {
+        mOrientationEventListener.enable();
+        super.onResume();
+    }
 
-        File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-        if (pictureFile == null){
-            System.out.println("Error creating media file, check storage permissions");
-            //Log.d(TAG, "Error creating media file, check storage permissions: " + e.getMessage());
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+
+        mCamera = Camera.open(Util.getFrontCameraId());
+        mCamera.setFaceDetectionListener(faceDetectionListener);
+        mCamera.startFaceDetection();
+        try {
+            mCamera.setPreviewDisplay(surfaceHolder);
+        } catch (Exception e) {
+            Log.e(TAG, "Could not preview the image.", e);
+        }
+    }
+
+
+    @Override
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i2, int i3) {
+        // We have no surface, return immediately:
+        if (surfaceHolder.getSurface() == null) {
             return;
         }
-
+        // Try to stop the current preview:
         try {
-            FileOutputStream fos = new FileOutputStream(pictureFile);
-            fos.write(data);
-            fos.close();
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found");
-            //Log.d(TAG, "File not found: " + e.getMessage());
-        } catch (IOException e) {
-            System.out.println("Error accessing file");
-            //Log.d(TAG, "Error accessing file: " + e.getMessage());
+            mCamera.stopPreview();
+        } catch (Exception e) {
+            // Ignore...
         }
+        // Get the supported preview sizes:
+        Camera.Parameters parameters = mCamera.getParameters();
+        List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
+        Camera.Size previewSize = previewSizes.get(0);
+        // And set them:
+        parameters.setPreviewSize(previewSize.width, previewSize.height);
+        mCamera.setParameters(parameters);
+        // Now set the display orientation for the camera. Can we do this differently?
+        mDisplayRotation = Util.getDisplayRotation(MyActivity.this);
+        mDisplayOrientation = Util.getDisplayOrientation(mDisplayRotation, 0);
+        mCamera.setDisplayOrientation(mDisplayOrientation);
+
+        if (mFaceView != null) {
+            mFaceView.setDisplayOrientation(mDisplayOrientation);
+        }
+
+        // Finally start the camera preview again:
+        mCamera.startPreview();
     }
 
-    */
-/** Create a file Uri for saving an image or video *//*
-
-    private static Uri getOutputMediaFileUri(int type){
-        return Uri.fromFile(getOutputMediaFile(type));
+    @Override
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        mCamera.setPreviewCallback(null);
+        mCamera.setFaceDetectionListener(null);
+        mCamera.setErrorCallback(null);
+        mCamera.release();
+        mCamera = null;
     }
 
-    */
-/** Create a File for saving an image or video *//*
+    /**
+     * We need to react on OrientationEvents to rotate the screen and
+     * update the views.
+     */
+    private class SimpleOrientationEventListener extends OrientationEventListener {
 
-    private static File getOutputMediaFile(int type){
-        // To be safe, you should check that the SDCard is mounted
-        // using Environment.getExternalStorageState() before doing this.
+        public SimpleOrientationEventListener(Context context) {
+            super(context, SensorManager.SENSOR_DELAY_NORMAL);
+        }
 
-        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), "MyCameraApp");
-        // This location works best if you want the created images to be shared
-        // between applications and persist after your app has been uninstalled.
-
-        // Create the storage directory if it does not exist
-        if (! mediaStorageDir.exists()){
-            if (! mediaStorageDir.mkdirs()){
-                Log.d("MyCameraApp", "failed to create directory");
-                return null;
+        @Override
+        public void onOrientationChanged(int orientation) {
+            // We keep the last known orientation. So if the user first orient
+            // the camera then point the camera to floor or sky, we still have
+            // the correct orientation.
+            if (orientation == ORIENTATION_UNKNOWN) return;
+            mOrientation = Util.roundOrientation(orientation, mOrientation);
+            // When the screen is unlocked, display rotation may change. Always
+            // calculate the up-to-date orientationCompensation.
+            int orientationCompensation = mOrientation
+                    + Util.getDisplayRotation(MyActivity.this);
+            if (mOrientationCompensation != orientationCompensation) {
+                mOrientationCompensation = orientationCompensation;
+                mFaceView.setOrientation(mOrientationCompensation);
             }
         }
-
-        // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE){
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_"+ timeStamp + ".jpg");
-        } else if(type == MEDIA_TYPE_VIDEO) {
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "VID_"+ timeStamp + ".mp4");
-        } else {
-            return null;
-        }
-
-        return mediaFile;
     }
-}*/
+}
