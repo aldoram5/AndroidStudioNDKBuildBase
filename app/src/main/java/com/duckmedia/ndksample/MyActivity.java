@@ -1,24 +1,25 @@
 package com.duckmedia.ndksample;
 
 import android.app.Activity;
-import android.content.DialogInterface;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Mat;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 public class MyActivity extends Activity implements View.OnClickListener {//implements CameraBridgeViewBase.CvCameraViewListener2{
@@ -27,12 +28,28 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
     private Camera mCamera;
     private CameraPreview mPreview;
 
+    private boolean theresCam = false;
+    private Context context = null;
+    private PictureCallback mPicture = new PictureCallback();
+
+    public static final String TAG = MyActivity.class.getSimpleName();
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        // Create an instance of Camera
+
+        Log.d(TAG, "Setting the context");
+        context = this;
+
+        Log.d(TAG, "looking for cameras in the device");
+        theresCam = checkCameraHardware(context);
+
+        mCamera = null;
+        mPreview = null;
+
+        /* Create an instance of Camera
         mCamera = getCameraInstance();
 
         this.initUIListeners();
@@ -42,7 +59,31 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
             mPreview = new CameraPreview(this, mCamera);
             FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
             preview.addView(mPreview);
+        }*/
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if(theresCam) {
+            this.initUIListeners();
+            Log.d(TAG, "Camera found");
+
+            // Create an instance of Camera
+            mCamera = getCameraInstance();
+
+            if(mCamera != null) {
+                mCamera.setDisplayOrientation(90);
+                // Create our Preview view and set it as the content of our activity.
+                mPreview = new CameraPreview(this, mCamera);
+                FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+                preview.addView(mPreview);
+
+            } else Log.d(TAG, "fail to get a device's camera");
+
         }
+        else Log.d(TAG, "there aren't cameras attached to the device");
     }
 
     private void initUIListeners(){
@@ -54,22 +95,39 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
 
 
     /** A safe way to get an instance of the Camera object. */
-    public static Camera getCameraInstance(){
+    public Camera getCameraInstance(){
+        releaseCameraAndPreview();
+
         Camera c = null;
+
         try {
+            Log.d(TAG, "Attempt to get a Camera instance");
             int camID = MyActivity.getFrontCameraId();
             if(camID != -1)
                 c = Camera.open(camID); // attempt to get a Camera instance
             else
                 throw new Exception("No front camera found");
-
+            Log.d("mainActivity", "We got a Camera instance");
         }
         catch (Exception e){
             // Camera is not available (in use or does not exist)
+            Log.d(TAG, "Camera is not available (in use or does not exist)");
+            e.printStackTrace();
         }
-        return c; // returns null if camera is unavailable
+        return c; // returns null if mCamera is unavailable
     }
 
+    private void releaseCameraAndPreview() {
+        Log.d(TAG, "Release Camera & preview");
+
+        if(mPreview != null) mPreview.setCamera(null);
+
+        Log.d(TAG, "Release Camera");
+        if (mCamera != null) {
+            mCamera.release();
+            mCamera = null;
+        }
+    }
 
     private static int getFrontCameraId(){
         int camId = -1;
@@ -118,5 +176,91 @@ public class MyActivity extends Activity implements View.OnClickListener {//impl
                 startActivity(intent);
                 break;
         }
+    }
+
+
+
+
+
+    //Custom Methods
+
+    /** Check if this device has a mCamera */
+    private boolean checkCameraHardware(Context context) {
+
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
+            // this device has a mCamera
+            return true;
+        } else {
+            // no mCamera on this device
+            return false;
+        }
+    }
+}
+
+//
+class PictureCallback implements Camera.PictureCallback {
+    public static final int MEDIA_TYPE_IMAGE = 1;
+    public static final int MEDIA_TYPE_VIDEO = 2;
+
+    @Override
+    public void onPictureTaken(byte[] data, Camera camera) {
+
+        File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+        if (pictureFile == null){
+            System.out.println("Error creating media file, check storage permissions");
+            //Log.d(TAG, "Error creating media file, check storage permissions: " + e.getMessage());
+            return;
+        }
+
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+            fos.write(data);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found");
+            //Log.d(TAG, "File not found: " + e.getMessage());
+        } catch (IOException e) {
+            System.out.println("Error accessing file");
+            //Log.d(TAG, "Error accessing file: " + e.getMessage());
+        }
+    }
+
+    /** Create a file Uri for saving an image or video */
+    private static Uri getOutputMediaFileUri(int type){
+        return Uri.fromFile(getOutputMediaFile(type));
+    }
+
+    /** Create a File for saving an image or video */
+    private static File getOutputMediaFile(int type){
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), "MyCameraApp");
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
+
+        // Create the storage directory if it does not exist
+        if (! mediaStorageDir.exists()){
+            if (! mediaStorageDir.mkdirs()){
+                Log.d("MyCameraApp", "failed to create directory");
+                return null;
+            }
+        }
+
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        File mediaFile;
+        if (type == MEDIA_TYPE_IMAGE){
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "IMG_"+ timeStamp + ".jpg");
+        } else if(type == MEDIA_TYPE_VIDEO) {
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "VID_"+ timeStamp + ".mp4");
+        } else {
+            return null;
+        }
+
+        return mediaFile;
     }
 }

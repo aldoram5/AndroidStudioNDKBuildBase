@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: /Users/gbmobile2/AndroidStudioProjects/NDKSample/libraries/opencv/src/org/opencv/engine/OpenCVEngineInterface.aidl
+ * Original file: /Users/gbmobile/Documents/AndroidStudioNDKBuildBase/libraries/opencv/src/org/opencv/engine/OpenCVEngineInterface.aidl
  */
 package org.opencv.engine;
 /**
