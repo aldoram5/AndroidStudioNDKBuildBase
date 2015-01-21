@@ -20,6 +20,8 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 
+import com.duckmedia.ndksample.faceRecognizer.FaceRecognizerWrapper;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -66,7 +68,8 @@ public class MyActivity extends Activity  implements SurfaceHolder.Callback {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mView = new SurfaceView(this);
-
+        System.loadLibrary("hello");
+        FaceRecognizerWrapper.getInstance();
         setContentView(mView);
         // Now create the OverlayView:
         mFaceView = new FaceOverlayView(this);
